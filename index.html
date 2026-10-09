@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="it" style="color-scheme: dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StudyMesh — Walkthrough</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg:#000000; --surface:#0a0a0a; --raised:#141414; --border:#2a2a2a;
+    --fg:#ffffff; --muted:#a0a0a0; --accent:#a855f7; --file:#c084fc; --red:#ef4444;
+    --tcp:#f59e0b; --local:#a855f7; --shared:#22d3ee;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif; }
+  body { display:flex; flex-direction:column; overflow:hidden; }
+
+  header { padding:12px 20px 8px; border-bottom:1px solid var(--border); background:var(--surface); flex:0 0 auto; }
+  header h1 { margin:0; font-size:1rem; font-weight:600; }
+  header p { margin:2px 0 8px; font-size:.82rem; color:var(--muted); }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .tab { padding:5px 12px; font-size:.8rem; border:1px solid var(--border); border-radius:999px;
+    background:var(--raised); color:var(--muted); cursor:pointer; }
+  .tab:hover { color:var(--fg); }
+  .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  main { flex:1 1 auto; display:flex; min-height:0; }
+  #viewport { flex:1 1 auto; position:relative; overflow:hidden; cursor:grab; background:var(--bg); }
+  #viewport.dragging { cursor:grabbing; }
+  #canvas { position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform; padding:40px; }
+  .mermaid-wrap svg { max-width:none !important; height:auto !important; }
+  .mermaid-wrap .node { cursor:pointer; }
+  .mermaid-wrap .node:hover rect, .mermaid-wrap .node:hover polygon,
+  .mermaid-wrap .node:hover .label-container { filter:brightness(1.3); transition:filter .15s; }
+  .mermaid-wrap .node.dim { opacity:.35; }
+
+  #tldr { position:absolute; left:16px; top:12px; z-index:5; max-width:520px; padding:10px 14px;
+    background:rgba(10,10,10,.85); backdrop-filter:blur(6px); border:1px solid var(--border);
+    border-radius:10px; font-size:.82rem; color:var(--muted); line-height:1.5; cursor:pointer; }
+  #tldr.collapsed { padding:5px 12px; border-radius:999px; font-size:.75rem; }
+  #tldr b { color:var(--fg); }
+
+  #legend { position:absolute; left:50%; bottom:14px; transform:translateX(-50%); z-index:5;
+    display:flex; gap:14px; flex-wrap:wrap; justify-content:center; padding:7px 14px;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px; font-size:.72rem; color:var(--muted); }
+  #legend span { display:flex; align-items:center; gap:6px; white-space:nowrap; }
+  .dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .line { width:22px; height:0; border-top:3px solid; display:inline-block; }
+  .line.dashed { border-top-style:dashed; border-top-width:2px; }
+
+  #zoom { position:absolute; left:16px; bottom:14px; z-index:5; display:flex; gap:4px; }
+  #zoom button, #zoom span { background:var(--surface); border:1px solid var(--border); color:var(--muted);
+    border-radius:6px; padding:4px 9px; font-size:.78rem; cursor:pointer; min-width:34px; text-align:center; }
+  #zoom button:hover { color:var(--fg); background:var(--raised); }
+  #hint { position:absolute; right:16px; bottom:14px; z-index:5; font-size:.7rem; color:var(--muted); opacity:.6; }
+  kbd { border:1px solid var(--border); border-radius:4px; padding:0 4px; font-size:.68rem; }
+
+  #panel { flex:0 0 540px; max-width:46vw; border-left:1px solid var(--border); background:var(--surface);
+    overflow-y:auto; padding:18px 20px 40px; }
+  #panel h2 { margin:0 0 6px; font-size:1.05rem; }
+  #panel h3 { margin:16px 0 6px; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); }
+  #panel p, #panel li { font-size:.85rem; line-height:1.6; color:#d4d4d4; }
+  #panel p { margin:0 0 8px; }
+  #panel ul { margin:0; padding-left:18px; }
+  #panel ul.plain { list-style:none; padding:0; }
+  #panel ul.plain li { margin:0 0 5px; }
+  #panel code { background:rgba(168,85,247,.12); padding:1px 5px; border-radius:4px;
+    font-family:"SF Mono","Fira Code",Menlo,monospace; font-size:.78rem; color:var(--file); }
+  #panel .files code { display:block; background:none; padding:0; margin-bottom:3px; }
+  #panel pre, #panel .shiki { background:#000 !important; border:1px solid var(--border); border-radius:8px;
+    padding:12px 14px; overflow-x:auto; margin:6px 0 10px; }
+  #panel pre code, #panel .shiki code { background:none; padding:0; font-size:.74rem; line-height:1.5; color:#e0e0e0; }
+  .badge { display:inline-block; font-size:.65rem; font-weight:600; letter-spacing:.04em; padding:1px 6px;
+    border-radius:4px; margin-right:6px; vertical-align:middle; text-transform:uppercase; }
+  .badge.tcp { background:rgba(245,158,11,.18); color:var(--tcp); border:1px solid var(--tcp); }
+  .badge.local { background:rgba(168,85,247,.18); color:var(--local); border:1px solid var(--local); }
+  .badge.shared { background:rgba(34,211,238,.18); color:var(--shared); border:1px solid var(--shared); }
+  .badge.spec { background:rgba(160,160,160,.15); color:var(--muted); border:1px solid var(--muted); }
+  .index-item { display:block; width:100%; text-align:left; background:var(--raised); border:1px solid var(--border);
+    color:var(--fg); border-radius:8px; padding:8px 10px; margin-bottom:6px; cursor:pointer; font-size:.83rem; }
+  .index-item:hover { border-color:var(--accent); }
+  .index-item small { display:block; color:var(--muted); font-size:.72rem; margin-top:2px; }
+  .nav { display:flex; gap:6px; margin-bottom:10px; }
+  .nav button { background:var(--raised); border:1px solid var(--border); color:var(--muted);
+    border-radius:6px; padding:4px 9px; font-size:.75rem; cursor:pointer; }
+  .nav button:hover { color:var(--fg); }
+  .q li { margin-bottom:6px; }
+  .muted { color:var(--muted); font-size:.78rem; }
+  @media (max-width: 900px) {
+    main { flex-direction:column; }
+    #panel { flex:0 0 45%; max-width:none; border-left:none; border-top:1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>StudyMesh Core v1.0.1 — walkthrough architetturale</h1>
+  <p>Ricostruito da <code>studymesh/*.py</code> e dalle specifiche congelate (<code>docs/PROTOCOL.md</code>, <code>docs/STATE_MACHINES.md</code>, <code>docs/REQUIREMENTS.md</code>, <code>docs/ANALYZER_SPEC.md</code>). Clicca nodi e passi per aprire i dettagli.</p>
+  <div class="tabs" id="tabs"></div>
+</header>
+<main>
+  <div id="viewport">
+    <div id="tldr"></div>
+    <div id="canvas"><div class="mermaid-wrap" id="diagram"></div></div>
+    <div id="legend"></div>
+    <div id="zoom">
+      <button id="zoomOut">−</button><span id="zoomPct">100%</span><button id="zoomIn">+</button><button id="zoomFit">Adatta</button>
+    </div>
+    <div id="hint"><kbd>Scroll</kbd> zoom · <kbd>Drag</kbd> pan · <kbd>←</kbd><kbd>→</kbd> passi · <kbd>Esc</kbd> indice</div>
+  </div>
+  <aside id="panel"></aside>
+</main>
+
+<script type="module">
+/* =====================================================================
+   DATI — tutto ricostruito dal codice reale. Gli snippet sono copiati
+   verbatim dai file indicati (numeri di riga di StudyMesh v1.0.1).
+   ===================================================================== */
+
+const TALK = { tcp:'TCP', local:'chiamata locale', shared:'memoria condivisa (thread)', spec:'specifica / test' };
+
+/* ------------------------- VISTA 1: ARCHITETTURA -------------------- */
+const ARCH_DIAGRAM = `
+flowchart LR
+  subgraph ctrl["Processo Controller (controller.py)"]
+    dataset["Cartella .md<br/>load_dataset()"]
+    controllerMain["Controller<br/>main() / run()"]
+    jobQueue[("job_queue<br/>queue.Queue")]
+    completion[("completion<br/>lock · condition · done · results")]
+    connThread["Thread per connessione<br/>handle_connection()"]
+    output["Output JSON<br/>stdout"]
+  end
+  subgraph shared["Modulo importato da ENTRAMBI i processi"]
+    protocolLayer["protocol.py<br/>framing + validazione"]
+  end
+  subgraph net["Rete (TCP su localhost)"]
+    tcp{{"Connessione TCP<br/>[4 byte N][JSON UTF-8]"}}
+  end
+  subgraph wrk["Processo Worker ×N (worker.py)"]
+    workerLoop["Worker<br/>run()"]
+    analyzer["Analyzer<br/>analyze(content)"]
+  end
+
+  dataset -->|"crea job dict"| controllerMain
+  controllerMain -->|"put(job)"| jobQueue
+  controllerMain -->|"accept() + Thread"| connThread
+  connThread -.->|"get_nowait / put"| jobQueue
+  connThread -.->|"_mark_result sotto lock"| completion
+  completion -.->|"results"| output
+  connThread -->|"build_frame / recv_frame"| protocolLayer
+  workerLoop -->|"build_frame / recv_frame"| protocolLayer
+  connThread ==>|"JOB/WORK · JOB/DONE · ERROR"| tcp
+  tcp ==>|"REGISTER · READY · RESULT · ERROR"| connThread
+  workerLoop ==>|"REGISTER · READY · RESULT · ERROR"| tcp
+  tcp ==>|"JOB/WORK · JOB/DONE · ERROR"| workerLoop
+  workerLoop -->|"analyze(content)"| analyzer
+  analyzer -->|"report dict"| workerLoop
+
+  linkStyle 8,9,10,11 stroke:#f59e0b,stroke-width:3px
+  linkStyle 3,4,5 stroke:#22d3ee,stroke-width:2px
+
+  classDef component fill:#a855f7,stroke:#c084fc,color:#fff
+  classDef composable fill:#7c3aed,stroke:#a78bfa,color:#fff
+  classDef utility fill:#6d28d9,stroke:#8b5cf6,color:#fff
+  classDef external fill:#525252,stroke:#f59e0b,color:#fff
+  classDef data fill:#0e7490,stroke:#22d3ee,color:#fff
+  class controllerMain,workerLoop component
+  class connThread composable
+  class protocolLayer,analyzer utility
+  class tcp external
+  class dataset,jobQueue,completion,output data
+
+  click dataset nodeClick "Dettagli"
+  click controllerMain nodeClick "Dettagli"
+  click jobQueue nodeClick "Dettagli"
+  click completion nodeClick "Dettagli"
+  click connThread nodeClick "Dettagli"
+  click output nodeClick "Dettagli"
+  click protocolLayer nodeClick "Dettagli"
+  click tcp nodeClick "Dettagli"
+  click workerLoop nodeClick "Dettagli"
+  click analyzer nodeClick "Dettagli"
+`;
+
+const ARCH_NODES = {
+  dataset: {
+    title: "Cartella di documenti Markdown → job",
+    what: "La cartella passata al controller contiene file <code>.md</code>. <code>load_dataset(folder)</code> li ordina per nome e crea una lista di dict <code>{job_id, filename, content}</code>: il <code>job_id</code> è la posizione (1..N), il <code>content</code> è l'intero testo del file già letto in memoria.",
+    why: "R-IN-01..04: ogni documento diventa un job con identificatore unico e deterministico. Il contenuto viaggia dentro il messaggio <code>JOB</code> (D008), quindi worker e controller non hanno bisogno di un filesystem condiviso e il worker non usa mai <code>filename</code> come percorso.",
+    talks: [
+      { kind:'local', text:"→ <code>controller.main()</code> chiama <code>load_dataset</code> e poi <code>protocol.build_frame(_job_message(job))</code> per ogni job: se un file supera <code>MAX_FRAME_BYTES</code> (1 MiB) il programma esce con codice 1 <em>prima</em> di aprire coda e listener." },
+      { kind:'local', text:"→ i job vengono messi in <code>job_queue</code> con <code>put()</code>." },
+    ],
+    io: "<b>Entra:</b> percorso della cartella. <b>Esce:</b> lista di dict job, ordinata per nome file.",
+    files: ["studymesh/controller.py:27-43", "studymesh/controller.py:210-224"],
+    code: `def load_dataset(folder):
+    paths = sorted(
+        (
+            path
+            for path in pathlib.Path(folder).iterdir()
+            if path.is_file() and path.suffix == ".md"
+        ),
+        key=lambda path: path.name,
+    )
+    return [
+        {
+            "job_id": job_id,
+            "filename": path.name,
+            "content": path.read_text(encoding="utf-8"),
+        }
+        for job_id, path in enumerate(paths, start=1)
+    ]`,
+    net: "Serializzazione del dato applicativo: il contenuto è la stringa che verrà incapsulata nel JSON e trasportata end-to-end. Il <code>filename</code> è solo un identificatore descrittivo (PROTOCOL.md §5.3), non un percorso.",
+    questions: [
+      "Perché il contenuto del file viaggia dentro il messaggio JOB e non un percorso sul disco?",
+      "Perché il job_id è deterministico? Cosa cambierebbe se fosse assegnato in ordine di arrivo dei worker?",
+      "Cosa succede se un file supera 1 MiB? In quale punto del codice viene rilevato e perché proprio lì?",
+    ],
+  },
+  controllerMain: {
+    title: "Controller: main() e run()",
+    what: "È il processo server. <code>main()</code> carica il dataset, verifica che ogni job stia in un frame, riempie <code>queue.Queue</code>, apre il socket in ascolto (<code>bind</code>/<code>listen</code>) e chiama <code>run()</code>. <code>run()</code> accetta esattamente <code>num_workers</code> connessioni, avvia un <code>threading.Thread</code> per ciascuna con target <code>handle_connection</code>, attende il join di tutti i thread e, se restano job incompleti, solleva <code>RuntimeError</code>; altrimenti restituisce <code>results</code>.",
+    why: "Qualcuno deve coordinare: possedere la coda, accettare le connessioni e sapere quando tutto è finito. Il modello 'un thread per connessione' (R-CONC-01, D005) è il più vicino all'esempio visto a lezione e rende ogni connessione indipendente dalle altre.",
+    talks: [
+      { kind:'local', text:"← <code>load_dataset</code> fornisce i job." },
+      { kind:'shared', text:"→ crea <code>job_queue</code> e <code>completion</code>, poi li passa a ogni thread <code>handle_connection</code>." },
+      { kind:'tcp', text:"← <code>listener.accept()</code> restituisce un nuovo socket per ogni worker che si connette (handshake TCP completato dal kernel)." },
+      { kind:'local', text:"→ dopo <code>run()</code> stampa il JSON finale ordinato per <code>job_id</code>." },
+    ],
+    io: "<b>Entra:</b> <code>argv = [folder, host, port, num_workers]</code>. <b>Esce:</b> JSON su stdout e codice di uscita 0, oppure <code>RuntimeError</code> / exit 1.",
+    files: ["studymesh/controller.py:182-202", "studymesh/controller.py:205-247"],
+    code: `def run(listener_sock, job_queue, num_workers):
+    completion = _make_completion(job_queue.qsize())
+    threads = []
+    try:
+        for _ in range(num_workers):
+            accepted_sock, _addr = listener_sock.accept()
+            thread = threading.Thread(
+                target=handle_connection,
+                args=(accepted_sock, job_queue, completion),
+            )
+            thread.start()
+            threads.append(thread)
+    finally:
+        for thread in threads:
+            thread.join()
+    if completion["completed"] < completion["total"]:
+        raise RuntimeError(
+            f"esecuzione incompleta: {completion['completed']}/{completion['total']} "
+            "job completati; nessun worker rimasto per completarli"
+        )
+    return dict(completion["results"])`,
+    net: "Server TCP concorrente: socket passivo (<code>bind</code> → <code>listen(num_workers)</code> → <code>accept</code>). <code>accept()</code> restituisce un socket <em>nuovo</em> per ogni connessione; il socket in ascolto resta lo stesso. Il modello è client/server con thread per connessione.",
+    questions: [
+      "Perché run() chiama accept() esattamente num_workers volte? Cosa succede a un quarto worker che si connette?",
+      "Cosa restituisce accept() e in che cosa differisce dal socket su cui è stato fatto listen()?",
+      "Se tutti i worker cadono a metà, come termina il controller? Perché non restituisce un risultato parziale? (R-RUN-04)",
+      "Perché il controllo sulla dimensione dei job è fatto in main() prima di bind()?",
+    ],
+  },
+  jobQueue: {
+    title: "Coda dei job — queue.Queue",
+    what: "Una coda FIFO thread-safe della libreria standard che contiene i dict job ancora da assegnare. <code>main()</code> la riempie; ogni thread <code>handle_connection</code> preleva con <code>get_nowait()</code>; <code>_requeue_if_incomplete</code> vi rimette un job interrotto.",
+    why: "R-CONC-03 e D006: con più thread che chiedono lavoro contemporaneamente serve un'estrazione atomica, altrimenti due worker potrebbero ricevere lo stesso job. La coda risolve <em>chi prende il prossimo job</em>, ma da sola non dice <em>se l'esecuzione è finita</em>: per quello serve <code>completion</code>.",
+    talks: [
+      { kind:'shared', text:"← <code>main()</code>: <code>put(job)</code> per ogni job del dataset." },
+      { kind:'shared', text:"↔ ogni thread <code>handle_connection</code>: <code>get_nowait()</code> sotto <code>completion[\"condition\"]</code>; <code>put(job)</code> nel <code>finally</code> se il job attivo non è completato." },
+    ],
+    io: "<b>Contiene:</b> dict <code>{job_id, filename, content}</code>. Stato J_QUEUED della macchina a stati del job.",
+    files: ["studymesh/controller.py:128-137", "studymesh/controller.py:100-105"],
+    code: `            with completion["condition"]:
+                while True:
+                    try:
+                        job = job_queue.get_nowait()
+                        break
+                    except queue.Empty:
+                        if completion["done"].is_set():
+                            job = None
+                            break
+                        completion["condition"].wait()`,
+    net: "Non è un concetto di rete ma di concorrenza: mutua esclusione interna alla Queue. Sul piano applicativo rappresenta lo stato <code>J_QUEUED</code> (STATE_MACHINES.md §5).",
+    questions: [
+      "Perché si usa get_nowait() invece del get() bloccante?",
+      "Perché la coda vuota non significa che l'esecuzione è finita? (Case C, STATE_MACHINES.md §4.3)",
+      "Può lo stesso job trovarsi due volte in coda? Quale invariante lo vieta e quale riga lo garantisce?",
+      "Il controllo sull'ordine di assegnazione è FIFO: è rilevante per la correttezza o solo per il determinismo del benchmark?",
+    ],
+  },
+  completion: {
+    title: "Stato condiviso di completamento",
+    what: "Un dict creato da <code>_make_completion(total_jobs)</code> e condiviso fra tutti i thread: <code>total</code>, <code>completed</code>, <code>results</code> (job_id → report), un <code>Lock</code>, una <code>Condition</code> costruita sullo stesso lock e un <code>Event done</code>. <code>_mark_result</code> registra il primo report per job_id e ignora i duplicati; quando <code>completed == total</code> imposta <code>done</code> e sveglia tutti.",
+    why: "La coda risponde a 'c'è lavoro?'; <code>completion</code> risponde a 'abbiamo finito?' e 'questo job è già stato fatto?'. Serve per inviare <code>JOB/DONE</code> solo a completamento globale (INV-10), per deduplicare i risultati (R-FAIL-03/04) e per rendere atomica la scelta fra 'registro il risultato' e 'rimetto il job in coda' (§8.4).",
+    talks: [
+      { kind:'shared', text:"↔ ogni <code>handle_connection</code>: <code>_mark_result</code> dopo un RESULT valido; <code>_requeue_if_incomplete</code> nel <code>finally</code>; <code>condition.wait()</code> nel Case C." },
+      { kind:'local', text:"→ <code>run()</code> legge <code>completed</code>/<code>total</code> e restituisce <code>results</code>." },
+    ],
+    io: "<b>Entra:</b> (job_id, report) dai thread. <b>Esce:</b> <code>results</code> canonici, segnale <code>done</code>.",
+    files: ["studymesh/controller.py:74-97"],
+    code: `def _make_completion(total_jobs):
+    lock = threading.Lock()
+    completion = {
+        "total": total_jobs,
+        "completed": 0,
+        "results": {},
+        "lock": lock,
+        "condition": threading.Condition(lock),
+        "done": threading.Event(),
+    }
+    if total_jobs == 0:
+        completion["done"].set()
+    return completion
+
+
+def _mark_result(completion, job_id, report):
+    with completion["condition"]:
+        if job_id in completion["results"]:
+            return
+        completion["results"][job_id] = report
+        completion["completed"] += 1
+        if completion["completed"] == completion["total"]:
+            completion["done"].set()
+            completion["condition"].notify_all()`,
+    net: "Semantica di consegna <b>at-least-once</b> con deduplicazione per <code>job_id</code> (PROTOCOL.md §15): un job può essere calcolato due volte, ma esiste un solo risultato canonico. Nessun I/O di rete viene mai eseguito sotto il lock (INV-11).",
+    questions: [
+      "Perché servono tre primitive (Lock, Condition, Event) e non basta un Lock?",
+      "Cosa protegge esattamente il lock? Cosa è vietato fare mentre lo si tiene e perché?",
+      "Se due RESULT per lo stesso job_id arrivano da due worker diversi, cosa succede a results e a completed?",
+      "Perché la Condition è costruita sullo stesso Lock? Cosa succederebbe con due lock separati?",
+      "Perché con total_jobs == 0 done viene impostato subito?",
+    ],
+  },
+  connThread: {
+    title: "Thread per connessione — handle_connection()",
+    what: "La funzione eseguita da un thread per ogni worker accettato. Implementa la macchina a stati della connessione (STATE_MACHINES.md §4): attende <code>REGISTER</code>, poi cicla su <code>READY</code> → preleva un job (o attende, o invia <code>JOB/DONE</code>) → invia <code>JOB/WORK</code> → attende <code>RESULT</code> → registra. Il job in corso vive nella variabile <em>locale</em> <code>active_job</code>; nel <code>finally</code> viene rimesso in coda se non completato e il socket viene chiuso.",
+    why: "R-CONC-01: ogni connessione ha il suo thread, così una <code>recv()</code> bloccante su un worker non ferma gli altri. È anche il punto in cui il protocollo applicativo viene fatto rispettare: sequenza dei messaggi, identità del worker, corrispondenza del <code>job_id</code>.",
+    talks: [
+      { kind:'tcp', text:"← riceve <code>REGISTER</code>, <code>READY</code>, <code>RESULT</code>, <code>ERROR</code> dal worker (via <code>_recv</code> → <code>protocol.recv_frame(sock)</code>)." },
+      { kind:'tcp', text:"→ invia <code>JOB/WORK</code>, <code>JOB/DONE</code>, <code>ERROR</code> (via <code>_send</code> → <code>sock.sendall(protocol.build_frame(msg))</code>)." },
+      { kind:'local', text:"→ <code>protocol.decode_message</code>, <code>protocol.validate_message</code>, <code>protocol.build_frame</code>." },
+      { kind:'shared', text:"↔ <code>job_queue</code> (get_nowait / put) e <code>completion</code> (_mark_result, condition.wait, _requeue_if_incomplete)." },
+    ],
+    io: "<b>Entra:</b> socket accettato, coda, completion. <b>Stato locale:</b> <code>worker_id</code> registrato, <code>active_job</code>. <b>Esce:</b> effetti su <code>completion</code>; il thread termina quando la connessione si chiude.",
+    files: ["studymesh/controller.py:108-179"],
+    code: `            active_job = job
+
+            _send(sock, _job_message(job))
+
+            result = _recv(sock)
+            if result["type"] != "RESULT":
+                _error(sock, "INVALID_SEQUENCE", "atteso RESULT dopo JOB/WORK", job["job_id"])
+                return
+            if result["worker_id"] != worker_id:
+                _error(sock, "WORKER_ID_MISMATCH", "worker_id diverso da quello registrato sulla connessione", job["job_id"])
+                return
+            if result["job_id"] != job["job_id"]:
+                _error(sock, "UNKNOWN_JOB", "job_id non assegnato a questa connessione", result["job_id"])
+                return
+
+            _mark_result(completion, result["job_id"], result["report"])
+            active_job = None
+    except protocol.FrameError as exc:
+        ...
+    except (EOFError, OSError):
+        return
+    finally:
+        if active_job is not None:
+            _requeue_if_incomplete(completion, job_queue, active_job)
+        sock.close()`,
+    net: "Server concorrente con I/O bloccante e un thread per connessione. È il livello che controlla la <em>sequenza</em> del protocollo applicativo (<code>INVALID_SEQUENCE</code>, <code>WORKER_ID_MISMATCH</code>, <code>UNKNOWN_JOB</code>), mentre <code>protocol.py</code> controlla solo la <em>forma</em>. Rilevamento del guasto: <code>recv()</code> che restituisce zero byte = EOF.",
+    questions: [
+      "Dove è memorizzato il job attivo? Perché non in una mappa globale worker_id → job?",
+      "Cosa fa il blocco finally e perché è lì e non in un except?",
+      "Il controller invia un ACK al RESULT? Come fa il worker a sapere che è stato accettato?",
+      "Cosa succede se il worker manda READY con un worker_id diverso da quello registrato?",
+      "Quale differenza c'è tra un errore rilevato da protocol.py (FrameError) e uno rilevato qui (sequenza)? Chi manda ERROR e con quale codice?",
+    ],
+  },
+  protocolLayer: {
+    title: "protocol.py — framing e validazione",
+    what: "Modulo senza stato importato sia dal controller sia dal worker. Contiene: <code>recv_exact</code> (legge esattamente n byte riassemblando letture parziali), <code>recv_frame</code> (4 byte di prefisso → N → N byte di payload), <code>build_frame</code> (JSON UTF-8 + <code>struct.pack(\"!I\", len)</code>), <code>decode_message</code>, <code>validate_message</code> (schema dei sei messaggi) e l'eccezione <code>FrameError(code)</code>.",
+    why: "TCP consegna un flusso di byte senza confini di messaggio: un <code>recv()</code> può restituire mezzo messaggio o due messaggi insieme. Il prefisso di lunghezza (D003) ristabilisce i confini. Centralizzare framing e validazione in un modulo condiviso evita che controller e worker interpretino il protocollo in modo diverso.",
+    talks: [
+      { kind:'local', text:"← <code>controller._send/_recv</code> e <code>worker._send/_receive</code> lo chiamano localmente, ciascuno nel proprio processo." },
+      { kind:'tcp', text:"↔ <code>recv_frame(sock)</code> chiama <code>sock.recv()</code>; <code>build_frame</code> produce i byte che il chiamante passa a <code>sock.sendall()</code>. protocol.py non apre né chiude mai socket." },
+    ],
+    io: "<b>Entra:</b> dict Python (invio) o socket (ricezione). <b>Esce:</b> bytes del frame, oppure dict validato, oppure <code>FrameError</code> con codice (<code>INVALID_FRAME</code>, <code>INVALID_UTF8</code>, <code>INVALID_JSON</code>, <code>INVALID_MESSAGE</code>) o <code>EOFError</code>.",
+    files: ["studymesh/protocol.py:28-76", "studymesh/protocol.py:207-230"],
+    code: `def recv_exact(sock, n):
+    buf = bytearray()
+    while len(buf) < n:
+        chunk = sock.recv(n - len(buf))
+        if not chunk:
+            raise EOFError("connessione chiusa durante la lettura di un frame")
+        buf.extend(chunk)
+    return bytes(buf)
+
+
+def build_frame(message):
+    payload = json.dumps(message).encode("utf-8")
+    payload_length = len(payload)
+    if not MIN_FRAME_BYTES <= payload_length <= MAX_FRAME_BYTES:
+        raise FrameError("INVALID_FRAME")
+    return struct.pack("!I", payload_length) + payload
+
+
+def recv_frame(sock):
+    header = recv_exact(sock, LENGTH_PREFIX_SIZE)
+    (n,) = struct.unpack("!I", header)
+    if not MIN_FRAME_BYTES <= n <= MAX_FRAME_BYTES:
+        raise FrameError("INVALID_FRAME")
+    return recv_exact(sock, n)`,
+    net: "<b>Framing</b> su flusso di byte, <b>network byte order</b> (big-endian, <code>\"!I\"</code>), <b>serializzazione</b> JSON UTF-8, <b>protocollo applicativo</b> con schema stretto (nessun campo extra). Distinzione fra validazione strutturale (qui) e validazione di sequenza (nel controller).",
+    questions: [
+      "Perché sock.recv(n) può restituire meno di n byte anche se n byte sono già arrivati?",
+      "Perché il prefisso è big-endian? Cosa significa \"!I\" in struct.pack?",
+      "Perché N viene validato prima di leggere il payload? Cosa succederebbe se un peer inviasse N = 4 miliardi?",
+      "Perché MIN_FRAME_BYTES vale 2? Un frame di 2 byte è un messaggio valido?",
+      "Che differenza c'è fra INVALID_MESSAGE e INVALID_SEQUENCE, e chi rileva ciascuno?",
+      "Cosa succede se arrivano due messaggi nello stesso segmento TCP?",
+    ],
+  },
+  tcp: {
+    title: "Connessione TCP (localhost)",
+    what: "Un socket <code>SOCK_STREAM</code> per worker. Il worker apre la connessione con <code>socket.create_connection((host, port))</code>; il controller la accetta con <code>accept()</code>. La connessione resta aperta per tutta la run e trasporta solo frame <code>[4 byte N][N byte JSON UTF-8]</code>. Non esistono heartbeat, timeout applicativi o riconnessione (PROTOCOL.md §14).",
+    why: "R-PROTO-01, D002: TCP dà consegna affidabile e ordinata, coerente con l'esempio client/server del corso. Il prezzo è che non conserva i confini dei messaggi (da qui il framing) e che un peer <em>vivo ma bloccato</em> non viene rilevato (R-FAIL-07).",
+    talks: [
+      { kind:'tcp', text:"worker → controller: <code>REGISTER</code>, <code>READY</code>, <code>RESULT</code>, <code>ERROR</code>." },
+      { kind:'tcp', text:"controller → worker: <code>JOB/WORK</code>, <code>JOB/DONE</code>, <code>ERROR</code>." },
+      { kind:'tcp', text:"chiusura: <code>sock.close()</code> di un lato → il <code>recv()</code> dell'altro restituisce <code>b\"\"</code> → <code>EOFError</code> in <code>recv_exact</code>." },
+    ],
+    io: "<b>Attraversano il cavo:</b> solo byte di frame. <b>Non attraversano il cavo:</b> chiamate a <code>analyze()</code>, accesso alla coda, lock, <code>completion</code>.",
+    files: ["studymesh/worker.py:64-70", "studymesh/controller.py:226-232"],
+    code: `# worker.py — lato client
+def main(argv):
+    host, port, worker_id = argv
+    sock = socket.create_connection((host, int(port)))
+
+# controller.py — lato server
+    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        listener.bind((host, port))
+        listener.listen(num_workers)
+        results = run(listener, job_queue, num_workers)
+    finally:
+        listener.close()`,
+    net: "<b>Garanzie di TCP:</b> affidabilità, ordine, controllo di flusso. <b>Non-garanzie:</b> confini dei messaggi, rilevamento di un peer bloccato senza traffico. <b>Chiusura:</b> FIN/RST → EOF lato applicativo. <b>Socket:</b> attivo (connect) vs passivo (listen/accept).",
+    questions: [
+      "Cosa garantisce TCP a StudyMesh e cosa NON garantisce?",
+      "Come si accorge il controller che un worker è caduto? Quale chiamata restituisce cosa?",
+      "Perché non UDP?",
+      "Un worker vivo ma bloccato in un loop infinito viene rilevato? Perché no, e cosa servirebbe? (fuori scope)",
+      "Perché una connessione per worker per tutta la run, e non una connessione per job?",
+    ],
+  },
+  workerLoop: {
+    title: "Worker — run()",
+    what: "Il processo client. Invia <code>REGISTER</code>, poi cicla: invia <code>READY</code>, riceve un messaggio; se <code>ERROR</code> termina con 1; se <code>JOB/DONE</code> termina con 0; se <code>JOB/WORK</code> chiama <code>analyzer.analyze(content)</code> e invia <code>RESULT</code>. Nessuna concorrenza interna, nessun retry, nessuna riconnessione. Se rileva un <code>FrameError</code> invia <code>ERROR</code> (best effort) e termina; su <code>EOFError</code> termina con 1.",
+    why: "Il lavoro va distribuito su più processi identici e sostituibili (D004: un solo tipo di job, worker non specializzati). Il modello è <em>pull</em>: il worker chiede lavoro quando è libero, così il controller non deve sapere quanti job può reggere ciascun worker.",
+    talks: [
+      { kind:'tcp', text:"→ controller: <code>REGISTER</code>, <code>READY</code>, <code>RESULT</code>, <code>ERROR</code>." },
+      { kind:'tcp', text:"← controller: <code>JOB/WORK</code>, <code>JOB/DONE</code>, <code>ERROR</code>." },
+      { kind:'local', text:"→ <code>analyzer.analyze(msg[\"content\"])</code> — chiamata di funzione nello stesso processo, nessun byte sulla rete." },
+      { kind:'local', text:"→ <code>protocol.build_frame</code> / <code>recv_frame</code> / <code>validate_message</code>." },
+    ],
+    io: "<b>Entra:</b> <code>argv = [host, port, worker_id]</code>. <b>Esce:</b> codice di uscita 0 (dopo JOB/DONE) o 1 (ERROR, EOF, messaggio inatteso).",
+    files: ["studymesh/worker.py:22-61"],
+    code: `def run(sock, worker_id):
+    try:
+        _send(sock, {"type": "REGISTER", "worker_id": worker_id})
+
+        while True:
+            _send(sock, {"type": "READY", "worker_id": worker_id})
+            msg = _receive(sock)
+
+            if msg["type"] == "ERROR":
+                return 1
+            elif msg["type"] == "JOB" and msg["status"] == "DONE":
+                return 0
+            elif msg["type"] == "JOB" and msg["status"] == "WORK":
+                report = analyzer.analyze(msg["content"])
+                _send(sock, {
+                    "type": "RESULT",
+                    "worker_id": worker_id,
+                    "job_id": msg["job_id"],
+                    "report": report,
+                })
+            else:
+                return 1`,
+    net: "Client TCP che implementa la macchina a stati del worker (W_CONNECTED → W_REGISTER_SENT → W_WAIT_JOB → W_WORKING → W_RESULT_SENT → …). Modello <b>pull</b> di distribuzione del lavoro. Distinzione netta fra elaborazione locale (analyze) e comunicazione (send/recv).",
+    questions: [
+      "Perché è il worker a chiedere lavoro con READY, invece che il controller a spingerlo?",
+      "Cosa fa il worker se riceve ERROR? E se il controller chiude la connessione prima di JOB/DONE?",
+      "Perché il worker non usa mai il campo filename?",
+      "Perché il worker non tenta di riconnettersi? È un limite o una scelta?",
+      "Quali righe di run() attraversano la rete e quali no?",
+    ],
+  },
+  analyzer: {
+    title: "Analyzer — analyze(content)",
+    what: "Una funzione pura: stringa → dict con esattamente 8 campi (<code>word_count</code>, <code>headings</code>, <code>heading_order_valid</code>, <code>embeds</code>, <code>local_links</code>, <code>frontmatter_valid</code>, <code>ocr_markers</code>, <code>sha256</code>). Esclude il frontmatter valido e i blocchi fenced prima di contare; calcola lo SHA-256 sul contenuto originale. Non importa <code>socket</code> né <code>protocol</code>.",
+    why: "R-AUDIT-01..05: un solo tipo di lavoro, deterministico e idempotente. Il determinismo (A-INV-01) è ciò che rende accettabile la semantica at-least-once: se un job viene calcolato due volte, il secondo report è identico al primo.",
+    talks: [
+      { kind:'local', text:"← chiamato solo da <code>worker.run()</code>, nello stesso processo. Nessuna comunicazione di rete: è elaborazione <em>end-to-end locale</em>." },
+      { kind:'spec', text:"↔ <code>docs/ANALYZER_SPEC.md</code> definisce ogni metrica (A-FRONT, A-HEAD, A-EMBED, A-LINK, A-OCR); <code>tests/test_analyzer.py</code> le verifica." },
+    ],
+    io: "<b>Entra:</b> <code>content: str</code> (può essere vuota). <b>Esce:</b> dict report, poi inserito nel messaggio <code>RESULT</code>.",
+    files: ["studymesh/analyzer.py:17-39"],
+    code: `def analyze(content: str) -> dict:
+    if not isinstance(content, str):
+        raise TypeError("content deve essere una stringa")
+
+    sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+    lines = content.split("\\n")
+    frontmatter_valid, structural_start = _parse_frontmatter(lines)
+    structural_lines = _structural_lines(lines, structural_start)
+    structural_text = "\\n".join(structural_lines)
+
+    heading_levels = _heading_levels(structural_lines)
+
+    return {
+        "word_count": len(_WORD_RE.findall(structural_text)),
+        "headings": len(heading_levels),
+        "heading_order_valid": _heading_order_valid(heading_levels),
+        "embeds": _count_embeds(structural_text),
+        "local_links": _count_local_links(structural_text),
+        "frontmatter_valid": frontmatter_valid,
+        "ocr_markers": len(_OCR_RE.findall(structural_text)),
+        "sha256": sha256,
+    }`,
+    net: "Nessun concetto di rete: è il punto in cui si vede la differenza fra <b>elaborazione locale</b> e <b>comunicazione</b>. Il legame con la rete è indiretto: idempotenza → at-least-once sicuro; <code>sha256</code> → verifica che il contenuto sia arrivato integro end-to-end.",
+    questions: [
+      "Perché il determinismo dell'analyzer è importante per il protocollo e non solo per i test?",
+      "Cosa succede se analyze() sollevasse un'eccezione? Chi se ne accorge e come? (ANALYSIS_FAILED non è implementato: R-FAIL-06)",
+      "Perché l'analisi sta nel worker e non nel controller?",
+      "A cosa serve lo sha256 nel report? Cosa dimostra se coincide con quello calcolato dal controller?",
+    ],
+  },
+  output: {
+    title: "Risultato finale — JSON su stdout",
+    what: "Dopo <code>run()</code>, <code>main()</code> costruisce una lista ordinata per <code>job_id</code> con <code>filename</code> e <code>report</code> e la stampa come JSON con <code>sort_keys=True</code>.",
+    why: "Il contratto chiede un solo audit e un risultato canonico per job. L'ordinamento rende l'output identico con 1, 2 o 3 worker (verificato da <code>test_stesso_dataset_1_2_3_worker_risultati_equivalenti</code>), indipendentemente dall'ordine di arrivo dei RESULT.",
+    talks: [
+      { kind:'local', text:"← <code>completion[\"results\"]</code> restituito da <code>run()</code>." },
+    ],
+    io: "<b>Entra:</b> dict job_id → report. <b>Esce:</b> array JSON su stdout.",
+    files: ["studymesh/controller.py:234-247"],
+    code: `    output = [
+        {
+            "job_id": job_id,
+            "filename": filename_by_job_id[job_id],
+            "report": results[job_id],
+        }
+        for job_id in sorted(results)
+    ]
+    print(json.dumps(output, ensure_ascii=False, sort_keys=True))
+    return 0`,
+    net: "Conseguenza visibile della deduplicazione: un solo record per <code>job_id</code> anche se il job è stato eseguito più volte (at-least-once).",
+    questions: [
+      "Perché l'output è identico con 1, 2 e 3 worker anche se i RESULT arrivano in ordine diverso?",
+      "Chi garantisce che ci sia esattamente un report per job_id?",
+    ],
+  },
+};
+
+/* ---------------------- VISTA 2: SEQUENZA NORMALE -------------------- */
+const SEQ_DIAGRAM = `
+sequenceDiagram
+  autonumber
+  participant W as Worker (worker.py)
+  participant A as Analyzer (stesso processo)
+  participant T as Thread handle_connection
+  participant Q as job_queue
+  participant S as completion
+  W->>T: [TCP] connect() → accept()
+  Note over T: run() avvia Thread(handle_connection)
+  W->>T: [TCP] REGISTER {worker_id}
+  W->>T: [TCP] READY {worker_id}
+  T->>Q: [locale] get_nowait() sotto condition
+  Q-->>T: job dict (active_job = job)
+  T->>W: [TCP] JOB/WORK {job_id, filename, content}
+  W->>A: [locale] analyze(content)
+  A-->>W: report dict
+  W->>T: [TCP] RESULT {worker_id, job_id, report}
+  T->>S: [locale] _mark_result(job_id, report) sotto lock
+  Note over S: completed += 1 · se completed == total → done.set()
+  W->>T: [TCP] READY {worker_id}
+  T->>Q: [locale] get_nowait() → queue.Empty
+  Note over T,S: done.is_set() → job = None
+  T->>W: [TCP] JOB/DONE {job_id: null, ...}
+  Note over W,T: entrambi sock.close() · worker exit 0
+`;
+
+const SEQ_STEPS = [
+  { id:'s1', kind:'tcp', title:"1. Connessione TCP",
+    what:"Il worker chiama <code>socket.create_connection((host, port))</code>; il kernel completa l'handshake a tre vie; sul controller <code>listener.accept()</code> restituisce il nuovo socket e <code>run()</code> avvia un thread con <code>handle_connection</code>.",
+    why:"Prima di qualsiasi messaggio applicativo serve un canale affidabile e ordinato. Il thread dedicato permette al controller di servire più worker in parallelo.",
+    files:["studymesh/worker.py:66", "studymesh/controller.py:186-193"],
+    code:`            accepted_sock, _addr = listener_sock.accept()
+            thread = threading.Thread(
+                target=handle_connection,
+                args=(accepted_sock, job_queue, completion),
+            )
+            thread.start()`,
+    net:"Socket attivo vs passivo; accept() produce un socket per connessione; thread per connessione.",
+    questions:["Chi fa l'handshake TCP: il codice Python o il kernel?", "Cosa succede se il worker si connette prima che il controller faccia listen()?"] },
+  { id:'s2', kind:'tcp', title:"2. REGISTER (worker → controller)",
+    what:"Primo messaggio applicativo: <code>{\"type\":\"REGISTER\",\"worker_id\":\"worker-1\"}</code>. Il controller lo valida con <code>protocol.validate_message</code> e memorizza <code>worker_id</code> nella variabile locale del thread. Nessun ACK: l'accettazione è implicita.",
+    why:"Lega un'identità alla connessione: da qui in poi ogni READY e RESULT deve portare lo stesso worker_id (altrimenti <code>WORKER_ID_MISMATCH</code>). Non esiste un registro globale dei worker: l'identità è locale alla connessione (PROTOCOL.md §6.5).",
+    files:["studymesh/controller.py:113-117", "studymesh/worker.py:24"],
+    code:`        register = _recv(sock)
+        if register["type"] != "REGISTER":
+            _error(sock, "INVALID_SEQUENCE", "atteso REGISTER come primo messaggio")
+            return
+        worker_id = register["worker_id"]`,
+    net:"Protocollo applicativo con sequenza obbligatoria; identità a livello applicativo, non di trasporto.",
+    questions:["Perché non c'è un messaggio ACK dopo REGISTER?", "Due worker con lo stesso worker_id: cosa succede? (DUPLICATE_WORKER non è emesso in v1)"] },
+  { id:'s3', kind:'tcp', title:"3. READY (worker → controller)",
+    what:"Il worker dichiara di essere libero. Il controller verifica tipo e worker_id, poi entra nella sezione critica per prelevare un job.",
+    why:"Modello pull: il controller assegna solo a chi ha chiesto. Un worker con un job attivo non può inviare READY (INV-09).",
+    files:["studymesh/controller.py:120-126", "studymesh/worker.py:27"],
+    code:`            ready = _recv(sock)
+            if ready["type"] != "READY":
+                _error(sock, "INVALID_SEQUENCE", "atteso READY")
+                return
+            if ready["worker_id"] != worker_id:
+                _error(sock, "WORKER_ID_MISMATCH", "worker_id diverso da quello registrato sulla connessione")
+                return`,
+    net:"Controllo di sequenza nel protocollo applicativo.",
+    questions:["Perché READY viene inviato anche dopo ogni RESULT?", "Cosa risponde il controller a un READY: quali tre possibilità?"] },
+  { id:'s4', kind:'shared', title:"4. Prelievo del job dalla coda (locale, sotto lock)",
+    what:"Sotto <code>completion[\"condition\"]</code>, <code>get_nowait()</code> estrae il primo job. Se la coda è vuota e <code>done</code> è impostato → <code>JOB/DONE</code>; se è vuota ma non è finito → <code>condition.wait()</code> (Case C). Il job estratto diventa <code>active_job</code>.",
+    why:"L'estrazione deve essere atomica fra thread e coordinata con lo stato di completamento: 'coda vuota' e 'tutto finito' sono due cose diverse.",
+    files:["studymesh/controller.py:128-143"],
+    code:`            with completion["condition"]:
+                while True:
+                    try:
+                        job = job_queue.get_nowait()
+                        break
+                    except queue.Empty:
+                        if completion["done"].is_set():
+                            job = None
+                            break
+                        completion["condition"].wait()
+
+            if job is None:
+                _send(sock, _job_done())
+                return
+
+            active_job = job`,
+    net:"Nessun byte sulla rete: concorrenza fra thread (mutua esclusione + attesa su condition). Transizione J_QUEUED → J_ASSIGNED.",
+    questions:["Perché il lock viene rilasciato prima di _send()? (INV-11)", "Cosa sveglia un thread fermo in condition.wait()?"] },
+  { id:'s5', kind:'tcp', title:"5. JOB/WORK (controller → worker)",
+    what:"<code>_send(sock, _job_message(job))</code>: il dict diventa JSON UTF-8, gli viene anteposto il prefisso di 4 byte e <code>sendall</code> lo scrive sul socket. Il messaggio contiene <code>job_id</code>, <code>filename</code> e l'intero <code>content</code>.",
+    why:"Il contenuto viaggia nel messaggio, così il worker non ha bisogno di accesso al disco del controller (D008).",
+    files:["studymesh/controller.py:56-63", "studymesh/controller.py:145"],
+    code:`def _job_message(job):
+    return {
+        "type": "JOB",
+        "status": "WORK",
+        "job_id": job["job_id"],
+        "filename": job["filename"],
+        "content": job["content"],
+    }`,
+    net:"Framing e serializzazione; sendall garantisce che tutti i byte vengano consegnati al buffer TCP.",
+    questions:["Perché sendall e non send?", "Quanto può essere grande al massimo un JOB/WORK e chi lo verifica?"] },
+  { id:'s6', kind:'local', title:"6. analyze(content) — chiamata locale nel worker",
+    what:"Il worker chiama <code>analyzer.analyze(msg[\"content\"])</code>: una normale chiamata di funzione Python nello stesso processo. Nessun socket coinvolto.",
+    why:"Il lavoro utile avviene qui. Separare l'analisi dal protocollo permette di testarla in isolamento e di mantenerla deterministica.",
+    files:["studymesh/worker.py:35", "studymesh/analyzer.py:17"],
+    code:`            elif msg["type"] == "JOB" and msg["status"] == "WORK":
+                report = analyzer.analyze(msg["content"])`,
+    net:"Elaborazione locale vs comunicazione: questo passo NON attraversa TCP.",
+    questions:["Se analyze() impiegasse 10 minuti, il controller se ne accorgerebbe? Perché?", "Perché la freccia analyze() nel diagramma è diversa dalle altre?"] },
+  { id:'s7', kind:'tcp', title:"7. RESULT (worker → controller)",
+    what:"Il worker invia <code>{\"type\":\"RESULT\",\"worker_id\",\"job_id\",\"report\"}</code>. Il controller controlla tipo, worker_id e che <code>job_id</code> coincida con <code>active_job</code>; altrimenti <code>INVALID_SEQUENCE</code>, <code>WORKER_ID_MISMATCH</code> o <code>UNKNOWN_JOB</code>.",
+    why:"Il risultato deve riferirsi esattamente al job assegnato su questa connessione (INV-04).",
+    files:["studymesh/worker.py:36-41", "studymesh/controller.py:147-156"],
+    code:`                _send(sock, {
+                    "type": "RESULT",
+                    "worker_id": worker_id,
+                    "job_id": msg["job_id"],
+                    "report": report,
+                })`,
+    net:"Messaggio applicativo con schema stretto: validate_message controlla anche gli 8 campi del report.",
+    questions:["Cosa succede se il worker invia RESULT con un job_id diverso da quello assegnato?", "Il controller ricalcola lo sha256 per verificare il report? (No: si fida dello schema; discuti i limiti.)"] },
+  { id:'s8', kind:'shared', title:"8. _mark_result — registrazione sotto lock",
+    what:"Sotto la Condition: se <code>job_id</code> è già in <code>results</code> il report viene ignorato (duplicato); altrimenti viene registrato, <code>completed</code> incrementa e, se <code>completed == total</code>, <code>done.set()</code> e <code>notify_all()</code> svegliano i thread in attesa. Poi <code>active_job = None</code>.",
+    why:"Un solo risultato canonico per job (R-FAIL-03/04); rilevamento del completamento globale (R-RUN-01).",
+    files:["studymesh/controller.py:89-97", "studymesh/controller.py:158-159"],
+    code:`def _mark_result(completion, job_id, report):
+    with completion["condition"]:
+        if job_id in completion["results"]:
+            return
+        completion["results"][job_id] = report
+        completion["completed"] += 1
+        if completion["completed"] == completion["total"]:
+            completion["done"].set()
+            completion["condition"].notify_all()`,
+    net:"Nessun byte sulla rete. Transizione J_ASSIGNED → J_COMPLETED. At-least-once + dedup.",
+    questions:["Perché notify_all e non notify?", "Perché active_job = None viene eseguito fuori dal lock?"] },
+  { id:'s9', kind:'tcp', title:"9. READY di nuovo, poi JOB/WORK o JOB/DONE",
+    what:"Il worker torna a inviare READY. Il controller ripete il passo 4: se c'è un altro job → JOB/WORK; se la coda è vuota e <code>done</code> è impostato → <code>JOB/DONE</code>; se è vuota ma altri worker hanno job attivi → attende sulla Condition.",
+    why:"Il ciclo W_WAIT_JOB → W_WORKING → W_RESULT_SENT → W_WAIT_JOB può ripetersi zero o più volte.",
+    files:["studymesh/controller.py:119-141", "studymesh/worker.py:26-33"],
+    code:`def _job_done():
+    return {"type": "JOB", "status": "DONE", "job_id": None, "filename": None, "content": None}`,
+    net:"JOB/DONE è l'unico segnale di terminazione normale: una chiusura TCP senza JOB/DONE è anomala (PROTOCOL.md §8.3, §13.4).",
+    questions:["Perché serve un messaggio esplicito JOB/DONE invece di chiudere semplicemente la connessione?", "Quando può il controller inviare JOB/DONE? Quale invariante lo vincola?"] },
+  { id:'s10', kind:'tcp', title:"10. Chiusura",
+    what:"Il controller esce da <code>handle_connection</code> (return) → <code>finally</code>: <code>active_job</code> è None, quindi nessun requeue; <code>sock.close()</code>. Il worker, ricevuto JOB/DONE, restituisce 0 e chiude nel suo <code>finally</code>. <code>run()</code> fa join dei thread e restituisce <code>results</code>.",
+    why:"Terminazione ordinata: ogni worker pronto riceve JOB/DONE (R-RUN-03), nessun processo residuo.",
+    files:["studymesh/controller.py:176-179", "studymesh/worker.py:60-61"],
+    code:`    finally:
+        if active_job is not None:
+            _requeue_if_incomplete(completion, job_queue, active_job)
+        sock.close()`,
+    net:"Chiusura ordinata della connessione TCP dopo la terminazione applicativa.",
+    questions:["Cosa succede se il worker riceve EOF invece di JOB/DONE?", "Cosa fa run() se completed < total dopo il join?"] },
+];
+
+/* ---------------------- VISTA 3: CADUTA DEL WORKER ------------------- */
+const FAIL_DIAGRAM = `
+sequenceDiagram
+  autonumber
+  participant A as Worker A
+  participant TA as Thread A (handle_connection)
+  participant Q as job_queue
+  participant S as completion
+  participant TB as Thread B (handle_connection)
+  participant B as Worker B
+  A->>TA: [TCP] READY
+  TA->>Q: [locale] get_nowait() → job 7
+  TA->>A: [TCP] JOB/WORK job 7 (active_job = job 7)
+  B->>TB: [TCP] READY
+  TB->>Q: [locale] get_nowait() → queue.Empty
+  Note over TB,S: done non impostato → condition.wait() (Case C)
+  Note over A: Worker A muore (processo ucciso / socket chiuso)
+  A--xTA: [TCP] FIN / RST — nessun RESULT
+  Note over TA: _recv → recv_exact → recv() = b"" → EOFError
+  TA->>S: [locale] finally: _requeue_if_incomplete (sotto lock)
+  Note over S: job 7 non in results
+  TA->>Q: [locale] put(job 7)
+  TA->>TB: [locale] condition.notify()
+  Note over TA: sock.close() · thread A termina
+  TB->>Q: [locale] get_nowait() → job 7
+  TB->>B: [TCP] JOB/WORK job 7
+  B->>TB: [TCP] RESULT job 7
+  TB->>S: [locale] _mark_result → risultato canonico
+  B->>TB: [TCP] READY
+  TB->>B: [TCP] JOB/DONE
+`;
+
+const FAIL_STEPS = [
+  { id:'f1', kind:'tcp', title:"1. Job 7 assegnato al worker A",
+    what:"Thread A estrae il job 7 dalla coda, lo salva in <code>active_job</code> e invia <code>JOB/WORK</code>. Da questo momento il job è J_ASSIGNED a esattamente un worker (INV-03).",
+    why:"Il riferimento locale <code>active_job</code> è ciò che permette, più tardi, di sapere <em>quale</em> job va recuperato.",
+    files:["studymesh/controller.py:143-147"],
+    code:`            active_job = job
+
+            _send(sock, _job_message(job))
+
+            result = _recv(sock)`,
+    net:"Il thread A è ora bloccato in recv() in attesa del RESULT.",
+    questions:["In quale stato della macchina a stati della connessione si trova il thread A? E il job 7?"] },
+  { id:'f2', kind:'shared', title:"2. Worker B in attesa (Case C)",
+    what:"Thread B riceve READY, trova la coda vuota, vede che <code>done</code> non è impostato e si ferma in <code>condition.wait()</code>, rilasciando il lock.",
+    why:"Coda vuota ≠ esecuzione finita: il job 7 è ancora in corso altrove. B non deve ricevere JOB/DONE (INV-10) e non deve fare polling: attende un segnale.",
+    files:["studymesh/controller.py:128-137"],
+    code:`                    except queue.Empty:
+                        if completion["done"].is_set():
+                            job = None
+                            break
+                        completion["condition"].wait()`,
+    net:"Concorrenza: attesa passiva su Condition. Nessun traffico TCP mentre B attende.",
+    questions:["Perché B non riceve JOB/DONE subito?", "Cosa succederebbe se il controller usasse un semplice ciclo di polling sulla coda?"] },
+  { id:'f3', kind:'tcp', title:"3. Il worker A cade",
+    what:"Il processo del worker A termina (kill, crash, chiusura del socket) senza inviare RESULT. Il kernel invia FIN (o RST). Sul controller, il <code>recv()</code> dentro <code>recv_exact</code> restituisce <code>b\"\"</code> e viene sollevato <code>EOFError</code>; un reset produce invece <code>OSError</code>. Entrambi sono catturati da <code>except (EOFError, OSError): return</code>.",
+    why:"Questo è l'unico meccanismo di rilevamento del guasto in v1 (PROTOCOL.md §14): EOF, reset o errore del socket. Nessun heartbeat, nessun timeout.",
+    files:["studymesh/protocol.py:35-40", "studymesh/controller.py:174-175"],
+    code:`        chunk = sock.recv(n - len(buf))
+        if not chunk:
+            raise EOFError("connessione chiusa durante la lettura di un frame")`,
+    net:"Chiusura TCP → EOF applicativo. Limite: un worker vivo ma bloccato non produce EOF e non viene rilevato (R-FAIL-07).",
+    questions:["Come si distingue, lato controller, una chiusura ordinata da un crash?", "Se il worker A fosse bloccato in un loop infinito invece di morire, cosa cambierebbe?"] },
+  { id:'f4', kind:'shared', title:"4. finally: il job torna in coda (una sola volta)",
+    what:"Uscendo da <code>handle_connection</code>, il <code>finally</code> vede <code>active_job</code> ≠ None e chiama <code>_requeue_if_incomplete</code>: sotto lo stesso lock di <code>_mark_result</code> controlla che il job 7 non sia già in <code>results</code>, lo rimette in coda con <code>put()</code> e chiama <code>condition.notify()</code>. Poi chiude il socket.",
+    why:"R-FAIL-01 e INV-12: un job non completato non può andare perso. R-FAIL-02 e §13.3: se il RESULT era già arrivato prima della disconnessione, il job NON torna in coda. Usare lo stesso lock evita la race fra risultato e disconnessione (§8.4).",
+    files:["studymesh/controller.py:100-105", "studymesh/controller.py:176-179"],
+    code:`def _requeue_if_incomplete(completion, job_queue, job):
+    with completion["condition"]:
+        if job["job_id"] in completion["results"]:
+            return
+        job_queue.put(job)
+        completion["condition"].notify()`,
+    net:"Transizione J_ASSIGNED → J_QUEUED (STATE_MACHINES.md §5.3). Il requeue avviene una sola volta (INV-13).",
+    questions:["Perché il requeue sta nel finally e non nell'except EOFError?", "Cosa succederebbe se _requeue_if_incomplete e _mark_result usassero due lock diversi?", "Perché il requeue avviene anche in caso di FrameError (test_frame_error_dopo_assegnazione_job_riassegna_il_job)?"] },
+  { id:'f5', kind:'shared', title:"5. Il thread B si sveglia e prende il job 7",
+    what:"<code>notify()</code> sveglia thread B, che riacquisisce il lock, ripete <code>get_nowait()</code> e stavolta ottiene il job 7. Rilascia il lock e invia <code>JOB/WORK</code> al worker B.",
+    why:"Riassegnazione a un worker sano (10.3 di STATE_MACHINES.md): il job è di nuovo J_ASSIGNED, a un solo worker.",
+    files:["studymesh/controller.py:129-145"],
+    code:`                    try:
+                        job = job_queue.get_nowait()
+                        break`,
+    net:"Il worker B non sa nulla dell'accaduto: per lui è un normale JOB/WORK.",
+    questions:["Il worker B può distinguere un job 'riassegnato' da uno nuovo? Serve che lo sappia?"] },
+  { id:'f6', kind:'tcp', title:"6. RESULT canonico e terminazione",
+    what:"Il worker B analizza e invia RESULT; <code>_mark_result</code> lo registra come risultato canonico del job 7. Se era l'ultimo, <code>done.set()</code> → al READY successivo B riceve JOB/DONE.",
+    why:"At-least-once: il job 7 potrebbe essere stato calcolato anche da A prima di morire, ma esiste un solo risultato registrato.",
+    files:["studymesh/controller.py:89-97"],
+    code:`        completion["results"][job_id] = report
+        completion["completed"] += 1
+        if completion["completed"] == completion["total"]:
+            completion["done"].set()
+            completion["condition"].notify_all()`,
+    net:"Semantica at-least-once con deduplicazione; l'analyzer deterministico rende il ricalcolo innocuo.",
+    questions:["Cosa succede se il worker A, invece di morire, invia RESULT e POI cade? (§10.4: nessun requeue)", "Se anche il worker B cade e non restano worker, come termina run()? (RuntimeError, R-RUN-04)", "Il risultato del job 7 cambia se viene calcolato da B invece che da A? Perché?"] },
+];
+
+/* ---------------------- VISTA 4: DIPENDENZE FRA MODULI --------------- */
+const MOD_DIAGRAM = `
+graph TD
+  subgraph app["studymesh/ — moduli applicativi"]
+    controllerPy["controller.py<br/>251 righe"]
+    workerPy["worker.py<br/>74 righe"]
+    protocolPy["protocol.py<br/>230 righe"]
+    analyzerPy["analyzer.py<br/>123 righe"]
+  end
+  subgraph std["Libreria standard Python"]
+    stdNet["socket · threading · queue"]
+    stdSer["json · struct · re"]
+    stdHash["hashlib · re"]
+  end
+  subgraph spec["Specifiche congelate e test"]
+    docsProto["docs/PROTOCOL.md<br/>docs/STATE_MACHINES.md"]
+    docsAn["docs/ANALYZER_SPEC.md"]
+    tests["tests/test_*.py<br/>78 test"]
+  end
+
+  controllerPy -->|"import"| protocolPy
+  workerPy -->|"import"| protocolPy
+  workerPy -->|"import"| analyzerPy
+  controllerPy --> stdNet
+  workerPy -->|"socket"| stdNet
+  protocolPy --> stdSer
+  analyzerPy --> stdHash
+  docsProto -.->|"normativo per"| protocolPy
+  docsProto -.->|"normativo per"| controllerPy
+  docsProto -.->|"normativo per"| workerPy
+  docsAn -.->|"normativo per"| analyzerPy
+  tests -.->|"verifica"| app
+  controllerPy x-- "NESSUN import" --x workerPy
+  controllerPy x-- "NESSUN import" --x analyzerPy
+
+  classDef component fill:#a855f7,stroke:#c084fc,color:#fff
+  classDef utility fill:#6d28d9,stroke:#8b5cf6,color:#fff
+  classDef external fill:#525252,stroke:#737373,color:#fff
+  classDef spec fill:#1f2937,stroke:#a0a0a0,color:#fff
+  class controllerPy,workerPy component
+  class protocolPy,analyzerPy utility
+  class stdNet,stdSer,stdHash external
+  class docsProto,docsAn,tests spec
+
+  click controllerPy nodeClick "Dettagli"
+  click workerPy nodeClick "Dettagli"
+  click protocolPy nodeClick "Dettagli"
+  click analyzerPy nodeClick "Dettagli"
+  click stdNet nodeClick "Dettagli"
+  click stdSer nodeClick "Dettagli"
+  click stdHash nodeClick "Dettagli"
+  click docsProto nodeClick "Dettagli"
+  click docsAn nodeClick "Dettagli"
+  click tests nodeClick "Dettagli"
+`;
+
+const MOD_NODES = {
+  controllerPy: { title:"controller.py", what:"Importa solo <code>protocol</code> fra i moduli applicativi, più <code>json, pathlib, queue, socket, sys, threading</code>. Non conosce né <code>worker</code> né <code>analyzer</code>: comunica con i worker esclusivamente tramite TCP.", why:"Il controller non ha bisogno di sapere <em>come</em> si analizza un documento: deve solo distribuire job e raccogliere report. Questo è il confine netto fra coordinamento e lavoro.", talks:[{kind:'local',text:"→ <code>protocol.build_frame</code>, <code>recv_frame</code>, <code>decode_message</code>, <code>validate_message</code>, <code>FrameError</code>, <code>MAX_FRAME_BYTES</code>."},{kind:'tcp',text:"↔ worker.py, ma solo attraverso il socket: nessun import."}], io:"", files:["studymesh/controller.py:17-24"], code:`import json
+import pathlib
+import queue
+import socket
+import sys
+import threading
+
+from studymesh import protocol`, net:"Un import è una dipendenza di codice nello stesso processo; la comunicazione con il worker è invece fra processi diversi via TCP. Confondere i due piani è l'errore classico all'orale.", questions:["Perché controller.py non importa analyzer.py?", "Se il controller volesse verificare lo sha256 del report, cosa dovrebbe importare e cosa cambierebbe nell'architettura?"] },
+  workerPy: { title:"worker.py", what:"Importa <code>analyzer</code> e <code>protocol</code>, più <code>socket</code> e <code>sys</code>. È il modulo più piccolo (74 righe): un client con un ciclo.", why:"Il worker è l'unico che esegue l'audit, quindi è l'unico che importa l'analyzer.", talks:[{kind:'local',text:"→ <code>analyzer.analyze</code>; <code>protocol.*</code>."},{kind:'tcp',text:"↔ controller.py, solo via socket."}], io:"", files:["studymesh/worker.py:6-9"], code:`import socket
+import sys
+
+from studymesh import analyzer, protocol`, net:"Client TCP; la dipendenza da analyzer è locale.", questions:["Quali di queste dipendenze attraversano la rete? (Nessuna: sono import.)"] },
+  protocolPy: { title:"protocol.py", what:"Modulo condiviso, senza stato, importato da entrambi. Dipende solo da <code>json, re, struct</code>. Non importa nessun altro modulo applicativo.", why:"Un'unica implementazione del framing e dello schema garantisce che i due lati parlino la stessa lingua.", talks:[{kind:'local',text:"← controller.py e worker.py."}], io:"", files:["studymesh/protocol.py:11-17"], code:`import json
+import re
+import struct
+
+LENGTH_PREFIX_SIZE = 4
+MIN_FRAME_BYTES = 2
+MAX_FRAME_BYTES = 1_048_576`, net:"Framing e serializzazione: il 'livello applicativo' sotto i messaggi.", questions:["Perché protocol.py non importa socket? Eppure recv_frame usa un socket: come?", "Chi usa MAX_FRAME_BYTES oltre a protocol.py e perché?"] },
+  analyzerPy: { title:"analyzer.py", what:"Dipende solo da <code>hashlib</code> e <code>re</code>. Nessun riferimento a socket, protocol o controller.", why:"Funzione pura e testabile in isolamento; la specifica ANALYZER_SPEC.md definisce ogni regola.", talks:[{kind:'local',text:"← worker.py."}], io:"", files:["studymesh/analyzer.py:1-14"], code:`import hashlib
+import re
+
+_WORD_RE = re.compile(r"[^\\W_]+(?:['\\-][^\\W_]+)*")
+_FENCE_RE = re.compile(r"^\`{3,}")
+_HEADING_RE = re.compile(r"^(#{1,6})\\s+(\\S.*)$")`, net:"Nessuno: elaborazione locale.", questions:["Cosa succederebbe se analyzer.py importasse protocol.py? Sarebbe un problema di correttezza o di design?"] },
+  stdNet: { title:"socket · threading · queue", what:"<code>socket</code> per TCP (controller: bind/listen/accept; worker: create_connection). <code>threading</code> per Thread, Lock, Condition, Event. <code>queue.Queue</code> per la coda thread-safe.", why:"R-NF-01: solo libreria standard (D009). Nessun framework di rete o di concorrenza.", talks:[], io:"", files:["studymesh/controller.py:17-22", "studymesh/worker.py:6"], code:`import queue
+import socket
+import threading`, net:"API socket BSD in Python; primitive di sincronizzazione.", questions:["Perché thread e non asyncio o processi? (D005)"] },
+  stdSer: { title:"json · struct · re", what:"<code>json</code> serializza i messaggi; <code>struct.pack(\"!I\")</code> produce il prefisso big-endian a 4 byte; <code>re</code> valida worker_id e sha256.", why:"Serializzazione leggibile e framing esplicito (D003).", talks:[], io:"", files:["studymesh/protocol.py:11-13"], code:`return struct.pack("!I", payload_length) + payload`, net:"Network byte order; serializzazione testuale.", questions:["Cosa cambierebbe usando '<I' invece di '!I'?"] },
+  stdHash: { title:"hashlib · re", what:"<code>hashlib.sha256</code> per l'impronta del contenuto; <code>re</code> per parole, titoli, link, embed e marker OCR.", why:"Metriche deterministiche senza dipendenze esterne.", talks:[], io:"", files:["studymesh/analyzer.py:3-4"], code:`sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()`, net:"Integrità end-to-end verificabile tramite hash.", questions:["Lo sha256 è calcolato sul contenuto originale o su quello 'strutturale'? Perché?"] },
+  docsProto: { title:"PROTOCOL.md + STATE_MACHINES.md", what:"Le specifiche normative congelate (DESIGN_FROZEN): framing, schemi dei messaggi, sequenze valide, codici di errore, macchine a stati, invarianti INV-01..15.", why:"In caso di dubbio vincono le specifiche, non le best practice generiche. Ogni comportamento del codice è tracciabile a una sezione.", talks:[{kind:'spec',text:"→ protocol.py (§3-5, 10), controller.py (§6-9, 11-15), worker.py (§11, 13)."}], io:"", files:["docs/PROTOCOL.md", "docs/STATE_MACHINES.md"], code:`# PROTOCOL.md §15
+StudyMesh adotta semantica at-least-once per l'elaborazione:
+- un job interrotto può essere eseguito nuovamente;
+- può verificarsi calcolo duplicato;
+- il controller conserva un solo risultato finale per job_id;
+- il primo risultato finale registrato non viene sovrascritto.`, lang:"markdown", net:"Specifica di un protocollo applicativo: direzione, schema, precondizioni, effetti, errori.", questions:["Quale sezione della specifica giustifica il blocco finally di handle_connection?"] },
+  docsAn: { title:"ANALYZER_SPEC.md", what:"Definisce input, output (8 campi esatti), invarianti A-INV-01/02 e ogni regola di conteggio (frontmatter, titoli, embed, link, OCR).", why:"R-AUDIT-05: le metriche sono fissate prima del codice.", talks:[{kind:'spec',text:"→ analyzer.py; verificato da tests/test_analyzer.py."}], io:"", files:["docs/ANALYZER_SPEC.md"], code:`### A-INV-01 — Determinismo
+A parità di input, l'analyzer deve produrre lo stesso report.`, lang:"markdown", net:"—", questions:["Perché il determinismo è un invariante di specifica e non solo una proprietà desiderabile?"] },
+  tests: { title:"tests/ — 78 test", what:"<code>test_protocol.py</code> (framing, schemi), <code>test_analyzer.py</code>, <code>test_worker.py</code>, <code>test_controller.py</code> (sequenze, duplicati, Case C, disconnessione, requeue), <code>test_integration.py</code> (worker reali, 1/2/3 worker), <code>test_benchmark.py</code>.", why:"R-NF-04: ogni requisito ha un test scritto prima del codice. I test sono la prova eseguibile delle invarianti.", talks:[{kind:'spec',text:"→ tutti i moduli; usano socket.socketpair() per simulare la connessione senza rete reale."}], io:"", files:["tests/test_controller.py:564", "tests/test_controller.py:294", "tests/test_integration.py:421"], code:`def test_worker_disconnesso_con_job_attivo_viene_riassegnato(self):
+def test_risultato_duplicato_non_sovrascrive_il_canonico(self):
+def test_coda_temporaneamente_vuota_attende_completamento_globale(self):
+def test_stesso_dataset_1_2_3_worker_risultati_equivalenti(self):`, net:"Test di protocollo con socketpair: stesso codice, nessuna rete fisica.", questions:["Come si testa una disconnessione senza uccidere un processo? (chiusura di un lato della socketpair)"] },
+};
+
+/* ---------------------- VISTA 5: CONCORRENZA ------------------------- */
+const CONC_DIAGRAM = `
+flowchart TD
+  recvReady["READY ricevuto<br/>(recv bloccante, fuori lock)"]
+  acquire["with completion.condition<br/>acquisisce il lock"]
+  tryGet{"job_queue.get_nowait()"}
+  gotJob["job estratto<br/>active_job = job<br/>rilascia lock"]
+  emptyQ{"done.is_set()?"}
+  condWait["condition.wait()<br/>rilascia lock, dorme<br/>(Case C)"]
+  sendDone["rilascia lock<br/>invia JOB/DONE<br/>return"]
+  sendWork["invia JOB/WORK<br/>(fuori lock)"]
+  recvResult["recv RESULT<br/>(bloccante, fuori lock)"]
+  markResult["_mark_result<br/>sotto lock: dedup, completed+1,<br/>done.set + notify_all se ultimo"]
+  eof["EOF / OSError / FrameError"]
+  requeue["finally: _requeue_if_incomplete<br/>sotto lock: put + notify<br/>sock.close()"]
+
+  recvReady --> acquire --> tryGet
+  tryGet -->|"job"| gotJob --> sendWork --> recvResult
+  tryGet -->|"queue.Empty"| emptyQ
+  emptyQ -->|"sì"| sendDone
+  emptyQ -->|"no"| condWait
+  condWait -.->|"svegliato da notify / notify_all"| tryGet
+  recvResult -->|"RESULT valido"| markResult --> recvReady
+  recvResult -->|"connessione caduta"| eof --> requeue
+  markResult -.->|"notify_all sveglia i thread in Case C"| condWait
+  requeue -.->|"notify sveglia un thread in Case C"| condWait
+
+  linkStyle 5,10,11 stroke:#22d3ee,stroke-width:2px
+
+  classDef lock fill:#0e7490,stroke:#22d3ee,color:#fff
+  classDef io fill:#525252,stroke:#f59e0b,color:#fff
+  classDef flow fill:#7c3aed,stroke:#a78bfa,color:#fff
+  class acquire,tryGet,emptyQ,condWait,markResult,requeue lock
+  class recvReady,sendWork,recvResult,sendDone io
+  class gotJob,eof flow
+
+  click recvReady nodeClick "Dettagli"
+  click acquire nodeClick "Dettagli"
+  click tryGet nodeClick "Dettagli"
+  click gotJob nodeClick "Dettagli"
+  click emptyQ nodeClick "Dettagli"
+  click condWait nodeClick "Dettagli"
+  click sendDone nodeClick "Dettagli"
+  click sendWork nodeClick "Dettagli"
+  click recvResult nodeClick "Dettagli"
+  click markResult nodeClick "Dettagli"
+  click eof nodeClick "Dettagli"
+  click requeue nodeClick "Dettagli"
+`;
+
+const CONC_NODES = {
+  recvReady: { title:"Attesa di READY (I/O bloccante, fuori dal lock)", what:"Il thread è fermo in <code>_recv(sock)</code> → <code>recv_frame</code> → <code>recv()</code>. Nessun lock è tenuto: gli altri thread lavorano liberamente.", why:"INV-11 / R-CONC-05: mai I/O di rete sotto lock, altrimenti un worker lento bloccherebbe tutti.", talks:[{kind:'tcp',text:"← READY dal worker."}], io:"", files:["studymesh/controller.py:120"], code:`            ready = _recv(sock)`, net:"I/O bloccante per thread: il modello thread-per-connessione rende accettabile bloccarsi.", questions:["Cosa succederebbe se il lock fosse acquisito prima di _recv?"] },
+  acquire: { title:"Acquisizione del lock condiviso", what:"<code>with completion[\"condition\"]:</code> acquisisce il Lock sottostante. Da qui fino all'uscita dal blocco nessun altro thread può toccare la coda-in-decisione né lo stato di completamento.", why:"La decisione 'prendo un job / attendo / termino' deve essere coerente con lo stato globale nello stesso istante.", talks:[{kind:'shared',text:"↔ completion.lock (condiviso da tutti i thread)."}], io:"", files:["studymesh/controller.py:128"], code:`            with completion["condition"]:`, net:"Mutua esclusione.", questions:["Perché si usa la Condition come context manager e non il Lock direttamente? (È lo stesso lock: Condition(lock).)"] },
+  tryGet: { title:"get_nowait() sulla coda", what:"Estrazione non bloccante. Se c'è un job lo restituisce e il ciclo interno esce; altrimenti solleva <code>queue.Empty</code>.", why:"Non si può usare <code>get()</code> bloccante: il thread deve poter accorgersi anche del completamento globale, non solo dell'arrivo di un job.", talks:[{kind:'shared',text:"↔ job_queue."}], io:"", files:["studymesh/controller.py:130-133"], code:`                    try:
+                        job = job_queue.get_nowait()
+                        break
+                    except queue.Empty:`, net:"—", questions:["Cosa succederebbe con job_queue.get() bloccante se l'ultimo job fosse completato da un altro thread?"] },
+  gotJob: { title:"Job estratto → active_job", what:"Il job diventa J_ASSIGNED a questa connessione. Il riferimento è salvato nella variabile locale <code>active_job</code>; il blocco <code>with</code> termina e il lock viene rilasciato <em>prima</em> di inviare.", why:"active_job locale (non una mappa globale) basta perché ogni connessione ha al più un job (INV-02/04).", talks:[], io:"", files:["studymesh/controller.py:143"], code:`            active_job = job`, net:"—", questions:["Perché active_job non deve essere protetto dal lock?"] },
+  emptyQ: { title:"Coda vuota: è finito davvero?", what:"Controlla <code>completion[\"done\"].is_set()</code>. Se sì, tutti i job sono COMPLETED → si può inviare JOB/DONE. Se no, qualche job è ancora attivo su un altro worker → Case C.", why:"Distingue 'coda vuota' da 'esecuzione completata' (STATE_MACHINES.md §4.3).", talks:[{kind:'shared',text:"← completion.done (Event)."}], io:"", files:["studymesh/controller.py:134-136"], code:`                        if completion["done"].is_set():
+                            job = None
+                            break`, net:"—", questions:["Perché non basta controllare job_queue.empty()?"] },
+  condWait: { title:"condition.wait() — Case C", what:"Il thread rilascia atomicamente il lock e si addormenta. Viene svegliato da <code>notify()</code> (requeue) o <code>notify_all()</code> (completamento globale), riacquisisce il lock e ripete il ciclo <code>while True</code> (ritenta <code>get_nowait</code>).", why:"Attesa passiva senza polling; il ciclo esterno protegge dai risvegli spuri e dal caso in cui un altro thread abbia già preso il job.", talks:[{kind:'shared',text:"← notify da _requeue_if_incomplete; notify_all da _mark_result."}], io:"", files:["studymesh/controller.py:137"], code:`                        completion["condition"].wait()`, net:"—", questions:["Perché wait() è dentro un while e non un if?", "Cosa succede se due thread attendono e arriva un solo job dal requeue? (notify sveglia uno; l'altro resta in attesa.)"] },
+  sendDone: { title:"JOB/DONE e uscita", what:"Fuori dal lock, invia <code>JOB/DONE</code> e fa return: il <code>finally</code> chiude il socket; <code>active_job</code> è None quindi nessun requeue.", why:"Terminazione ordinata (INV-10, INV-15).", talks:[{kind:'tcp',text:"→ JOB/DONE al worker."}], io:"", files:["studymesh/controller.py:139-141"], code:`            if job is None:
+                _send(sock, _job_done())
+                return`, net:"Terminazione applicativa esplicita prima della chiusura TCP.", questions:["Perché il lock deve essere rilasciato prima di _send?"] },
+  sendWork: { title:"Invio di JOB/WORK (fuori dal lock)", what:"<code>sendall(build_frame(...))</code> del job: può bloccarsi se il buffer TCP è pieno (content fino a 1 MiB), ma nessun lock è tenuto.", why:"INV-11.", talks:[{kind:'tcp',text:"→ JOB/WORK."}], io:"", files:["studymesh/controller.py:145"], code:`            _send(sock, _job_message(job))`, net:"Controllo di flusso TCP: sendall attende spazio nel buffer.", questions:["Cosa succede se sendall fallisce perché il worker è già caduto? (OSError → finally → requeue.)"] },
+  recvResult: { title:"Attesa del RESULT (bloccante, fuori lock)", what:"Il thread resta in <code>recv()</code> finché arriva il frame del RESULT o la connessione cade. Non c'è timeout: un worker bloccato tiene il thread in attesa per sempre (R-FAIL-07).", why:"Semplicità: nessun lease né heartbeat in v1.", talks:[{kind:'tcp',text:"← RESULT / ERROR / EOF."}], io:"", files:["studymesh/controller.py:147"], code:`            result = _recv(sock)`, net:"Limite del rilevamento dei guasti basato solo su EOF.", questions:["Come si potrebbe rilevare un worker bloccato? Perché è fuori scope?"] },
+  markResult: { title:"_mark_result (sotto lock)", what:"Dedup per job_id, incremento di <code>completed</code>, e se è l'ultimo: <code>done.set()</code> + <code>notify_all()</code> per svegliare tutti i thread in Case C, che troveranno done impostato e invieranno JOB/DONE.", why:"R-FAIL-03/04, R-RUN-01.", talks:[{kind:'shared',text:"→ results, completed, done; → notify_all."}], io:"", files:["studymesh/controller.py:89-97"], code:`        if completion["completed"] == completion["total"]:
+            completion["done"].set()
+            completion["condition"].notify_all()`, net:"—", questions:["Perché qui notify_all e nel requeue solo notify?"] },
+  eof: { title:"Connessione caduta o frame invalido", what:"<code>EOFError</code> (recv = b\"\"), <code>OSError</code> (reset/errore socket) o <code>FrameError</code> (frame o messaggio malformato: in questo caso il controller prova a inviare ERROR con lo stesso codice, best effort). Tutti portano al <code>finally</code>.", why:"PROTOCOL.md §13-14: gli unici guasti rilevabili in v1.", talks:[{kind:'tcp',text:"← FIN/RST o byte malformati."}], io:"", files:["studymesh/controller.py:160-175"], code:`    except protocol.FrameError as exc:
+        try:
+            _error(
+                sock,
+                exc.code,
+                "frame o messaggio non valido",
+                active_job["job_id"] if active_job is not None else None,
+            )
+        except OSError:
+            pass
+        return
+    except (EOFError, OSError):
+        return`, net:"Rilevamento del guasto = chiusura della connessione.", questions:["Perché l'invio di ERROR è 'best effort' e non viene ritentato?"] },
+  requeue: { title:"finally: requeue e chiusura", what:"Se <code>active_job</code> ≠ None: sotto lo stesso lock, se il job non è in <code>results</code> lo rimette in coda e chiama <code>notify()</code>. Poi <code>sock.close()</code>. Il thread termina; <code>run()</code> lo joina.", why:"R-FAIL-01/02, INV-12/13, §8.4 (race fra risultato e disconnessione risolta dallo stesso lock).", talks:[{kind:'shared',text:"→ job_queue.put; → notify."}], io:"", files:["studymesh/controller.py:100-105", "studymesh/controller.py:176-179"], code:`    finally:
+        if active_job is not None:
+            _requeue_if_incomplete(completion, job_queue, active_job)
+        sock.close()`, net:"At-least-once: il job può essere ricalcolato.", questions:["Perché finally e non except? Quale caso coprirebbe male un except?"] },
+};
+
+/* ---------------------- VISTE ---------------------------------------- */
+const VIEWS = {
+  arch: { label:"1 · Architettura", diagram: ARCH_DIAGRAM, nodes: ARCH_NODES,
+    tldr:"<b>StudyMesh</b> è un controller TCP che distribuisce documenti Markdown a N worker identici. Il controller carica i file in una <b>coda</b>, accetta N connessioni e avvia <b>un thread per connessione</b>; ogni worker chiede lavoro con READY, riceve JOB/WORK, chiama <b>localmente</b> l'analyzer e rimanda RESULT. Solo le frecce spesse arancioni attraversano TCP; tutto il resto è chiamata di funzione o memoria condivisa fra thread.",
+    legend:[ {dot:'#a855f7',label:'Processo / ruolo'}, {dot:'#7c3aed',label:'Thread'}, {dot:'#6d28d9',label:'Modulo puro'}, {dot:'#0e7490',label:'Dato / stato'}, {dot:'#525252',label:'Rete'},
+             {line:'#f59e0b',label:'══ TCP (byte sul cavo)'}, {line:'#a0a0a0',label:'── chiamata locale'}, {line:'#a0a0a0',dashed:true,label:'╌╌ memoria condivisa'} ] },
+  seq: { label:"2 · Job normale", diagram: SEQ_DIAGRAM, steps: SEQ_STEPS,
+    tldr:"Ciclo <b>REGISTER → READY → JOB/WORK → RESULT → READY → … → JOB/DONE</b>. Ogni messaggio marcato <b>[TCP]</b> è un frame <code>[4 byte N][JSON]</code> sul socket; ogni passo <b>[locale]</b> è una chiamata di funzione nel processo indicato. <code>analyze()</code> non attraversa mai la rete.",
+    legend:[ {line:'#f59e0b',label:'[TCP] attraversa il socket'}, {line:'#a855f7',label:'[locale] stesso processo'}, {line:'#22d3ee',label:'sotto lock condiviso'} ] },
+  fail: { label:"3 · Worker cade", diagram: FAIL_DIAGRAM, steps: FAIL_STEPS,
+    tldr:"Il worker A muore con il job 7 attivo. Il controller lo rileva solo perché <code>recv()</code> restituisce zero byte (EOF). Il <b>finally</b> di handle_connection rimette il job in coda <b>una sola volta</b> (se non già completato) e sveglia il worker B in attesa, che lo completa. Semantica <b>at-least-once</b> + risultato canonico.",
+    legend:[ {line:'#f59e0b',label:'[TCP]'}, {line:'#a855f7',label:'[locale]'}, {line:'#22d3ee',label:'sotto lock'} ] },
+  conc: { label:"4 · Coda, thread, lock", diagram: CONC_DIAGRAM, nodes: CONC_NODES,
+    tldr:"Il ciclo interno di <code>handle_connection</code>, eseguito da ogni thread. In <b>azzurro</b> i passi sotto il lock condiviso (brevi, mai I/O); in <b>grigio/arancio</b> l'I/O bloccante fuori dal lock. I tre risvegli della Condition: <code>notify</code> dal requeue, <code>notify_all</code> dal completamento globale.",
+    legend:[ {dot:'#0e7490',label:'sotto completion.lock'}, {dot:'#525252',label:'I/O di rete (fuori lock)'}, {dot:'#7c3aed',label:'stato locale del thread'}, {line:'#a0a0a0',dashed:true,label:'risveglio della Condition'} ] },
+  mod: { label:"5 · Moduli e import", diagram: MOD_DIAGRAM, nodes: MOD_NODES,
+    tldr:"Chi importa chi. <code>controller.py</code> e <code>worker.py</code> importano entrambi <code>protocol.py</code>; solo il worker importa <code>analyzer.py</code>. Controller e worker <b>non si importano a vicenda</b>: si parlano solo via TCP. Un import è una dipendenza nello stesso processo, non comunicazione di rete.",
+    legend:[ {dot:'#a855f7',label:'processo'}, {dot:'#6d28d9',label:'modulo puro'}, {dot:'#525252',label:'stdlib'}, {dot:'#1f2937',label:'spec / test'}, {line:'#a0a0a0',label:'── import'}, {line:'#a0a0a0',dashed:true,label:'╌╌ normativo / verifica'} ] },
+};
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+const $ = (s) => document.querySelector(s);
+const viewport = $('#viewport'), canvas = $('#canvas'), diagramEl = $('#diagram'), panel = $('#panel');
+let current = 'arch', activeId = null;
+
+/* Shiki opzionale: se il CDN non risponde, fallback a <pre> semplice */
+let highlighter = null;
+try {
+  const shiki = await import('https://cdn.jsdelivr.net/npm/shiki@3/+esm');
+  highlighter = await shiki.createHighlighter({ themes:['vitesse-dark'], langs:['python','markdown'] });
+} catch (e) { console.warn('Shiki non disponibile, uso fallback:', e); }
+
+function dedent(code) {
+  const lines = code.split('\n');
+  const ind = Math.min(...lines.filter(l => l.trim()).map(l => l.match(/^ */)[0].length));
+  return lines.map(l => l.slice(ind)).join('\n');
+}
+
+function codeHtml(code, lang) {
+  code = dedent(code);
+  if (highlighter) {
+    try { return highlighter.codeToHtml(code, { lang: lang || 'python', theme:'vitesse-dark' }); } catch (e) {}
+  }
+  const pre = document.createElement('pre'); const c = document.createElement('code'); c.textContent = code; pre.appendChild(c);
+  return pre.outerHTML;
+}
+
+const MERMAID_BASE = {
+  startOnLoad:false, theme:'dark', securityLevel:'loose',
+  themeVariables: {
+    primaryColor:'#0a0a0a', primaryTextColor:'#ffffff', primaryBorderColor:'#2a2a2a',
+    lineColor:'#a0a0a0', background:'#000000', secondaryColor:'#000000', tertiaryColor:'#000000',
+    mainBkg:'#0a0a0a', nodeBorder:'#2a2a2a', clusterBkg:'rgba(10,10,10,0.8)', clusterBorder:'#7c3aed',
+    titleColor:'#ffffff', edgeLabelBackground:'#000000',
+    actorBkg:'#141414', actorBorder:'#a855f7', actorTextColor:'#ffffff', actorLineColor:'#555',
+    signalColor:'#ffffff', signalTextColor:'#ffffff', noteBkgColor:'#1f2937', noteTextColor:'#e5e7eb', noteBorderColor:'#22d3ee',
+    sequenceNumberColor:'#000',
+  },
+  flowchart: { useMaxWidth:false, htmlLabels:true, curve:'basis' },
+  sequence: { useMaxWidth:false, mirrorActors:false, messageFontSize:13, noteFontSize:12, actorFontSize:13, wrap:true, width:210 },
+};
+
+window.nodeClick = (id) => showItem(id);
+
+async function renderView(name) {
+  current = name; activeId = null;
+  const v = VIEWS[name];
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+  $('#tldr').innerHTML = v.tldr; $('#tldr').classList.remove('collapsed');
+  $('#legend').innerHTML = v.legend.map(l => l.dot
+      ? `<span><i class="dot" style="background:${l.dot}"></i>${l.label}</span>`
+      : `<span><i class="line ${l.dashed?'dashed':''}" style="border-color:${l.line}"></i>${l.label}</span>`).join('');
+  mermaid.initialize(MERMAID_BASE);
+  diagramEl.innerHTML = '';
+  try {
+    const { svg, bindFunctions } = await mermaid.render('wt-' + name + '-' + Date.now(), v.diagram);
+    diagramEl.innerHTML = svg; bindFunctions?.(diagramEl);
+  } catch (e) {
+    diagramEl.innerHTML = `<pre style="color:#ef4444;padding:20px">Errore Mermaid: ${String(e)}</pre>`;
+  }
+  // Le sequence diagram di Mermaid non hanno click: i passi si scelgono dal pannello.
+  if (v.steps) {
+    diagramEl.querySelectorAll('.messageText').forEach((t, i) => {
+      t.style.cursor = 'pointer';
+      t.addEventListener('click', () => { const idx = tcpIndexToStep(i); if (idx != null) showItem(idx); });
+    });
+  }
+  showIndex();
+  setTimeout(fit, 80);
+}
+
+/* Le frecce del sequence diagram non corrispondono 1:1 ai passi; il click
+   sul testo di una freccia apre il passo più vicino in base alla mappa sotto. */
+const SEQ_ARROW_TO_STEP = { seq:[ 's1','s2','s3','s4','s4','s5','s6','s6','s7','s8','s9','s9','s10' ],
+                            fail:[ 'f1','f1','f1','f2','f2','f3','f4','f4','f4','f5','f5','f6','f6','f6','f6' ] };
+function tcpIndexToStep(i) { const m = SEQ_ARROW_TO_STEP[current]; return m ? m[Math.min(i, m.length-1)] : null; }
+
+function items() { const v = VIEWS[current]; return v.nodes ? v.nodes : Object.fromEntries(v.steps.map(s => [s.id, s])); }
+function itemOrder() { return Object.keys(items()); }
+
+function showIndex() {
+  activeId = null; dimNodes(null);
+  const v = VIEWS[current]; const list = items();
+  const isSteps = !!v.steps;
+  panel.innerHTML = `<h2>${v.label}</h2>
+    <p class="muted">${isSteps ? 'Segui i passi in ordine (o usa ← →). Ogni passo dice se attraversa TCP o resta locale.' : 'Clicca un nodo del diagramma o un elemento qui sotto.'}</p>
+    ${Object.entries(list).map(([id, it]) => `<button class="index-item" data-id="${id}">
+      ${it.kind ? `<span class="badge ${it.kind}">${TALK[it.kind]}</span>` : ''}${it.title}
+      <small>${(it.files||[]).join(' · ')}</small></button>`).join('')}`;
+  panel.querySelectorAll('.index-item').forEach(b => b.addEventListener('click', () => showItem(b.dataset.id)));
+}
+
+function dimNodes(id) {
+  diagramEl.querySelectorAll('.node').forEach(n => n.classList.toggle('dim', !!id && !n.id.includes('-' + id + '-')));
+}
+
+function showItem(id) {
+  const it = items()[id]; if (!it) return;
+  activeId = id; dimNodes(id);
+  const order = itemOrder(), i = order.indexOf(id);
+  const sec = (h, body) => body ? `<h3>${h}</h3>${body}` : '';
+  panel.innerHTML = `
+    <div class="nav">
+      <button id="navIdx">☰ Indice</button>
+      <button id="navPrev" ${i<=0?'disabled':''}>← Prec.</button>
+      <button id="navNext" ${i>=order.length-1?'disabled':''}>Succ. →</button>
+    </div>
+    <h2>${it.kind ? `<span class="badge ${it.kind}">${TALK[it.kind]}</span>` : ''}${it.title}</h2>
+    ${sec('Che cos’è', `<p>${it.what}</p>`)}
+    ${sec('Perché esiste', `<p>${it.why}</p>`)}
+    ${it.talks && it.talks.length ? sec('Con chi parla', `<ul class="plain">${it.talks.map(t => `<li><span class="badge ${t.kind}">${TALK[t.kind]}</span>${t.text}</li>`).join('')}</ul>`) : ''}
+    ${sec('Cosa entra / cosa esce', it.io ? `<p>${it.io}</p>` : '')}
+    ${sec('Codice reale', `<div class="files">${(it.files||[]).map(f => `<code>${f}</code>`).join('')}</div>${codeHtml(it.code, it.lang)}`)}
+    ${sec('Concetto di Reti', it.net && it.net !== '—' ? `<p>${it.net}</p>` : '')}
+    ${sec('Domande da orale', `<ul class="q">${(it.questions||[]).map(q => `<li>${q}</li>`).join('')}</ul>`)}
+  `;
+  $('#navIdx').addEventListener('click', showIndex);
+  $('#navPrev').addEventListener('click', () => i > 0 && showItem(order[i-1]));
+  $('#navNext').addEventListener('click', () => i < order.length-1 && showItem(order[i+1]));
+  panel.scrollTop = 0;
+}
+
+/* Pan & zoom (vanilla) */
+const st = { zoom:1, x:0, y:0 }; const drag = { on:false, lx:0, ly:0 };
+function apply() { canvas.style.transform = `translate(${st.x}px,${st.y}px) scale(${st.zoom})`; $('#zoomPct').textContent = Math.round(st.zoom*100)+'%'; }
+function fit() {
+  const svg = diagramEl.querySelector('svg'); if (!svg) return;
+  const r = svg.getBoundingClientRect(); const sw = r.width/st.zoom + 80, sh = r.height/st.zoom + 80;
+  const vw = viewport.clientWidth, vh = viewport.clientHeight;
+  st.zoom = Math.max(0.15, Math.min(1.6, Math.min((vw-40)/sw, (vh-120)/sh)));
+  st.x = (vw - sw*st.zoom)/2; st.y = Math.max(60, (vh - sh*st.zoom)/2); apply();
+}
+viewport.addEventListener('wheel', (e) => {
+  e.preventDefault(); const r = viewport.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top, f = e.deltaY < 0 ? 1.12 : 1/1.12;
+  const nz = Math.min(4, Math.max(0.15, st.zoom*f)), sc = nz/st.zoom;
+  st.x = mx - sc*(mx - st.x); st.y = my - sc*(my - st.y); st.zoom = nz; apply();
+}, { passive:false });
+viewport.addEventListener('pointerdown', (e) => { if (e.target.closest('.node, .messageText, #tldr, #legend, #zoom')) return; drag.on = true; drag.lx = e.clientX; drag.ly = e.clientY; viewport.classList.add('dragging'); viewport.setPointerCapture(e.pointerId); });
+viewport.addEventListener('pointermove', (e) => { if (!drag.on) return; st.x += e.clientX - drag.lx; st.y += e.clientY - drag.ly; drag.lx = e.clientX; drag.ly = e.clientY; apply(); });
+const endDrag = () => { drag.on = false; viewport.classList.remove('dragging'); };
+viewport.addEventListener('pointerup', endDrag); viewport.addEventListener('pointercancel', endDrag);
+$('#zoomIn').addEventListener('click', () => { st.zoom = Math.min(4, st.zoom*1.25); apply(); });
+$('#zoomOut').addEventListener('click', () => { st.zoom = Math.max(0.15, st.zoom/1.25); apply(); });
+$('#zoomFit').addEventListener('click', fit);
+window.addEventListener('resize', fit);
+$('#tldr').addEventListener('click', () => $('#tldr').classList.toggle('collapsed'));
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') return showIndex();
+  const order = itemOrder(); const i = activeId ? order.indexOf(activeId) : -1;
+  if (e.key === 'ArrowRight') showItem(order[Math.min(order.length-1, i+1)]);
+  if (e.key === 'ArrowLeft') showItem(order[Math.max(0, i-1)]);
+});
+
+/* Tabs */
+$('#tabs').innerHTML = Object.entries(VIEWS).map(([k, v]) => `<button class="tab" data-view="${k}">${v.label}</button>`).join('');
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { location.hash = t.dataset.view; renderView(t.dataset.view); }));
+
+const [initialView, initialItem] = location.hash.slice(1).split('/');
+await renderView(VIEWS[initialView] ? initialView : 'arch');
+if (initialItem) showItem(initialItem);
+</script>
+</body>
+</html>
